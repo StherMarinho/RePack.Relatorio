@@ -23,10 +23,10 @@ namespace ApiRelatorio.Repositories
                 SELECT
                     COUNT(*) AS TotalEnvios,
                     COALESCE(SUM(quantidade_itens), 0) AS TotalItens,
-                    SUM(CASE WHEN id_status_envio = (SELECT id FROM Status_envio WHERE nome_status = 'Concluído') THEN 1 ELSE 0 END) AS EnviosConcluidos,
-                    SUM(CASE WHEN id_status_envio = (SELECT id FROM Status_envio WHERE nome_status = 'Pendente')  THEN 1 ELSE 0 END) AS EnviosPendentes,
-                    SUM(CASE WHEN id_status_envio = (SELECT id FROM Status_envio WHERE nome_status = 'Cancelado') THEN 1 ELSE 0 END) AS EnviosCancelados
-                FROM Envio;";
+                    SUM(CASE WHEN id_status_envio = (SELECT id FROM status_envio WHERE nome_status = 'Concluído') THEN 1 ELSE 0 END) AS EnviosConcluidos,
+                    SUM(CASE WHEN id_status_envio = (SELECT id FROM status_envio WHERE nome_status = 'Pendente')  THEN 1 ELSE 0 END) AS EnviosPendentes,
+                    SUM(CASE WHEN id_status_envio = (SELECT id FROM status_envio WHERE nome_status = 'Cancelado') THEN 1 ELSE 0 END) AS EnviosCancelados
+                FROM envio;";
 
             return await connection.QuerySingleAsync<RelatorioEnvio>(sql);
         }
@@ -41,9 +41,9 @@ namespace ApiRelatorio.Repositories
                     e.descricao      AS DescricaoEmbalagem,
                     COUNT(ie.id)     AS QuantidadeRecebida,
                     COALESCE(SUM(e.peso_medio), 0) AS PesoTotalGramas
-                FROM Item_envio ie
-                INNER JOIN Embalagem e ON ie.id_embalagem = e.id
-                INNER JOIN Material_embalagem me ON e.id_tipo = me.id
+                FROM item_envio ie
+                INNER JOIN embalagem e ON ie.id_embalagem = e.id
+                INNER JOIN material_embalagem me ON e.id_tipo = me.id
                 GROUP BY e.id, me.nome, e.descricao
                 ORDER BY QuantidadeRecebida DESC
                 LIMIT @Top;";
@@ -62,7 +62,7 @@ namespace ApiRelatorio.Repositories
                     COUNT(DISTINCT id_usuario)         AS UsuariosComPontuacao,
                     COALESCE(MAX(pontos), 0)           AS MaiorPontuacao,
                     COALESCE(MIN(pontos), 0)           AS MenorPontuacao
-                FROM Pontuacao;";
+                FROM pontuacao;";
 
             return await connection.QuerySingleAsync<RelatorioPontuacao>(sql);
         }
@@ -77,7 +77,7 @@ namespace ApiRelatorio.Repositories
                     SUM(CASE WHEN ativo = FALSE THEN 1 ELSE 0 END) AS TotalUsuariosInativos,
                     SUM(CASE WHEN MONTH(data_cadastro) = MONTH(NOW())
                               AND YEAR(data_cadastro)  = YEAR(NOW())  THEN 1 ELSE 0 END) AS NovosUsuariosNoMes
-                FROM Usuario;";
+                FROM usuario;";
 
             return await connection.QuerySingleAsync<RelatorioUsuario>(sql);
         }
@@ -89,9 +89,9 @@ namespace ApiRelatorio.Repositories
             // Total de clientes ativos com pelo menos uma pontuação
             const string sqlTotal = @"
                 SELECT COUNT(DISTINCT u.id)
-                FROM Usuario u
-                INNER JOIN Tipo_usuario tu ON u.id_tipo_usuario = tu.id
-                INNER JOIN Pontuacao p ON p.id_usuario = u.id
+                FROM usuario u
+                INNER JOIN tipo_usuario tu ON u.id_tipo_usuario = tu.id
+                INNER JOIN pontuacao p ON p.id_usuario = u.id
                 WHERE tu.descricao = 'Comum'
                   AND u.ativo = TRUE;";
 
@@ -105,9 +105,9 @@ namespace ApiRelatorio.Repositories
                     u.nome                                           AS NomeUsuario,
                     COALESCE(SUM(p.pontos), 0)                       AS TotalPontos,
                     COUNT(DISTINCT p.id_envio)                       AS TotalEnvios
-                FROM Usuario u
-                INNER JOIN Tipo_usuario tu ON u.id_tipo_usuario = tu.id
-                INNER JOIN Pontuacao p ON p.id_usuario = u.id
+                FROM usuario u
+                INNER JOIN tipo_usuario tu ON u.id_tipo_usuario = tu.id
+                INNER JOIN pontuacao p ON p.id_usuario = u.id
                 WHERE tu.descricao = 'Comum'
                   AND u.ativo = TRUE
                 GROUP BY u.id, u.nome
